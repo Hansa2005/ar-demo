@@ -3,54 +3,134 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>Smart Menu AR Demo</title>
+    <title>Smart Menu AR Experience - Demo</title>
     
-    <!-- Core A-Frame framework -->
+    <!-- Core A-Frame Framework -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <!-- Optimized Marker-Based AR.js script -->
+    
+    <!-- Optimized Marker-Based AR.js Engine -->
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <!-- Animation Plugin to play the internal loops from your Chef GLB -->
+    
+    <!-- A-Frame Extras Plugin to handle internal GLB/Mixamo skeletal animations -->
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
+
+    <style>
+        /* Modern full-screen overlay for loading states */
+        .arjs-loader {
+            height: 100%; width: 100%; position: absolute; top: 0; left: 0;
+            background-color: rgba(18, 18, 18, 0.95); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .arjs-loader div {
+            text-align: center; color: #ffffff; font-size: 1.4em; font-weight: 500; margin-bottom: 10px;
+        }
+        .arjs-loader .sub-text {
+            color: #a0a0a0; font-size: 0.9em; font-weight: 400;
+        }
+    </style>
 </head>
 <body style="margin: 0px; overflow: hidden;">
+    
+    <!-- Loading Screen Overlay -->
+    <div class="arjs-loader">
+        <div>Initializing 3D AR Engine...</div>
+        <div class="sub-text">Point your camera at the Hiro marker when ready.</div>
+    </div>
 
-    <!-- Scene Setup utilizing the Webcam component -->
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+    <!-- Custom Component to Fix AI Generation Texture Bugs (Removes the solid black material issue) -->
+    <script>
+        AFRAME.registerComponent('fix-ai-materials', {
+            init: function () {
+                this.el.addEventListener('model-loaded', () => {
+                    const obj = this.el.getObject3D('mesh');
+                    if (!obj) return;
+                    
+                    obj.traverse(node => {
+                        if (node.isMesh && node.material) {
+                            // Strip away broken environmental physical maps that cause black rendering
+                            node.material.roughness = 0.8; 
+                            node.material.metalness = 0.1;
+                            
+                            // Force correct color profile decoding for web viewports
+                            if (node.material.map) {
+                                node.material.map.encoding = THREE.sRGBEncoding;
+                            }
+                            node.material.needsUpdate = true;
+                        }
+                    });
+                });
+            }
+        });
+    </script>
 
+    <!-- Main AR Scene Configured for Mobile and Desktop Web Browser -->
+    <a-scene
+        vr-mode-ui="enabled: false;"
+        renderer="logarithmicDepthBuffer: true; precision: medium; colorManagement: true;"
+        embedded
+        arjs="sourceType: webcam; debugUIEnabled: false;">
+
+        <!-- Central Asset Preloading Registry -->
         <a-assets>
-            <a-asset-item id="pizza" src="pizza.glb"></a-asset-item>
-            <a-asset-item id="chef" src="chef.glb"></a-asset-item>
+            <a-asset-item id="pizza-model" src="pizza.glb"></a-asset-item>
+            <a-asset-item id="chef-model" src="chef.glb"></a-asset-item>
         </a-assets>
 
-        <!-- Ambient and Directional Lighting maps -->
-        <a-entity light="type: ambient; intensity: 1.5;"></a-entity>
-        <a-entity light="type: directional; intensity: 1.0; position: 1 4 3"></a-entity>
+        <!-- Dynamic Studio Lighting Rig to bring out vibrant colors -->
+        <a-entity light="type: ambient; intensity: 1.6;"></a-entity>
+        <a-entity light="type: directional; intensity: 1.2; position: 2 4 3"></a-entity>
+        <a-entity light="type: directional; intensity: 0.5; position: -2 2 -1"></a-entity>
 
-        <!-- The Standard Universal Hiro Tracker -->
+        <!-- Universal Prototyping Hiro Test Marker Node -->
         <a-marker preset="hiro">
             
-            <!-- Core Positioning Wrapper (Since it's a small marker on screen, keep scale near 1) -->
-            <a-entity position="0 0 0" scale="1 1 1">
+            <!-- Scaling and Orientation Wrapper Entity -->
+            <a-entity position="0 0 0" scale="1.2 1.2 1.2">
                 
-                <!-- 1. Your Custom Pizza Mesh -->
-                <a-entity gltf-model="#pizza" position="0 0 0" rotation="0 0 0" scale="1 1 1"></a-entity>
-
-                <!-- 2. Your Animated Walking/Cutting Chef -->
+                <!-- 1. The Custom Pizza Asset with Material Fix Applied -->
                 <a-entity 
-                    gltf-model="#chef"
-                    position="-0.5 0.1 0"
+                    gltf-model="#pizza-model" 
+                    fix-ai-materials
+                    position="0 0 0" 
+                    rotation="0 0 0">
+                </a-entity>
+
+                <!-- 
+                  2. The Animated Chef Asset
+                  - animation-mixer: Auto-runs the embedded walk/cut sequence loop 
+                  - animation: Controls the back-and-forth physical positioning across the top of the pizza
+                -->
+                <a-entity 
+                    gltf-model="#chef-model"
+                    fix-ai-materials
+                    position="-0.5 0.15 0"
                     scale="0.25 0.25 0.25"
                     rotation="0 90 0"
-                    animation-mixer="loop: repeat; timeScale: 1;"
-                    animation="property: position; from: -0.5 0.1 0; to: 0.5 0.1 0; dur: 5000; dir: alternate; loop: true; easing: linear">
+                    animation-mixer="loop: repeat; timeScale: 1.1;"
+                    animation="property: position; from: -0.5 0.15 0; to: 0.5 0.15 0; dur: 6000; dir: alternate; loop: true; easing: linear">
                 </a-entity>
 
             </a-entity>
             
         </a-marker>
 
+        <!-- Fallback System Camera Object -->
         <a-entity camera></a-entity>
-    </a-scene>
+    </scene>
 
+    <script>
+        // Dismiss the system loading page once assets load and tracking begins
+        window.addEventListener('arjs-nft-loaded', () => {
+            document.querySelector('.arjs-loader').style.display = 'none';
+        });
+        
+        // Secondary fallback to guarantee loading screen disappears if camera permissions take time
+        window.addEventListener('camera-init', () => {
+            setTimeout(() => {
+                document.querySelector('.arjs-loader').style.display = 'none';
+            }, 800);
+        });
+    </script>
 </body>
 </html>
