@@ -12,35 +12,23 @@
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
 
     <style>
-        /* Force transparent backgrounds so the camera feed is visible underneath */
-        html, body, a-scene {
+        /* Force root layouts to stay completely see-through */
+        html, body {
             background-color: transparent !important;
             margin: 0px;
             overflow: hidden;
             width: 100%;
             height: 100%;
         }
-        /* Modern full-screen overlay for loading states */
-        .arjs-loader {
-            height: 100%; width: 100%; position: absolute; top: 0; left: 0;
-            background-color: rgba(18, 18, 18, 0.95); z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
-            flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        .arjs-loader div {
-            text-align: center; color: #ffffff; font-size: 1.4em; font-weight: 500; margin-bottom: 10px;
-        }
-        .arjs-loader .sub-text {
-            color: #a0a0a0; font-size: 0.9em; font-weight: 400;
+        /* Lock canvas layer position to background zero stack */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
         }
     </style>
 </head>
-<body>
-    
-    <div class="arjs-loader" id="loading-screen">
-        <div>Initializing 3D AR Engine...</div>
-        <div class="sub-text" id="status-text">Requesting system camera permissions...</div>
-    </div>
+<body class="embedded">
 
     <script>
         AFRAME.registerComponent('fix-ai-materials', {
@@ -120,28 +108,5 @@
         <a-entity camera></a-entity>
     </a-scene>
 
-    <script>
-        const loader = document.getElementById('loading-screen');
-        const statusText = document.getElementById('status-text');
-
-        // Force clear the loading screen once the video stream injection succeeds
-        window.addEventListener('camera-init', (data) => {
-            setTimeout(() => { loader.style.display = 'none'; }, 500);
-        });
-
-        // Backup event check: if scene renders, clear loader if camera took too long
-        document.querySelector('a-scene').addEventListener('renderstart', () => {
-            statusText.innerText = "Scene rendering... loading camera feed.";
-            setTimeout(() => { loader.style.display = 'none'; }, 1500);
-        });
-
-        // Fail-safe check for hardware browser environment access 
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-            .catch(function(err) {
-                statusText.innerHTML = "<span style='color: #ff6b6b;'>Camera Access Denied! Please check your App Permissions.</span>";
-            });
-        }
-    </script>
 </body>
 </html>
