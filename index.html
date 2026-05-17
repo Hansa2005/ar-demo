@@ -39,7 +39,7 @@
     </div>
 
     <!-- Custom Component to Fix AI Generation Texture Bugs (Removes the solid black material issue) -->
-    <script>
+<script>
         AFRAME.registerComponent('fix-ai-materials', {
             init: function () {
                 this.el.addEventListener('model-loaded', () => {
@@ -47,16 +47,27 @@
                     if (!obj) return;
                     
                     obj.traverse(node => {
-                        if (node.isMesh && node.material) {
-                            // Strip away broken environmental physical maps that cause black rendering
-                            node.material.roughness = 0.8; 
-                            node.material.metalness = 0.1;
+                        if (node.isMesh) {
+                            // If the model uses an array of multiple materials, fix all of them
+                            const materials = Array.isArray(node.material) ? node.material : [node.material];
                             
-                            // Force correct color profile decoding for web viewports
-                            if (node.material.map) {
-                                node.material.map.encoding = THREE.sRGBEncoding;
-                            }
-                            node.material.needsUpdate = true;
+                            materials.forEach(mat => {
+                                if (mat) {
+                                    // 1. Completely kill broken black/metallic specular reflections
+                                    mat.roughness = 1.0; 
+                                    mat.metalness = 0.0;
+                                    
+                                    // 2. Force the base color to map evenly, preventing shadow drop-off
+                                    if (mat.color) mat.color.setHex(0xffffff); 
+                                    
+                                    // 3. Force correct color profiles so green leaves and red crust pop
+                                    if (mat.map) {
+                                        mat.map.encoding = THREE.sRGBEncoding;
+                                    }
+                                    
+                                    mat.needsUpdate = true;
+                                }
+                            });
                         }
                     });
                 });
