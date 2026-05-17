@@ -29,7 +29,7 @@
 </head>
 <body style="margin: 0px; overflow: hidden;">
     
-    <div class="arjs-loader">
+    <div class="arjs-loader" id="loading-screen">
         <div>Initializing 3D AR Engine...</div>
         <div class="sub-text">Point your camera at the Hiro marker when ready.</div>
     </div>
@@ -43,19 +43,16 @@
                     
                     obj.traverse(node => {
                         if (node.isMesh && node.material) {
-                            // Convert single materials or arrays into a clean map loop
                             const originalMats = Array.isArray(node.material) ? node.material : [node.material];
                             const newMats = originalMats.map(mat => {
                                 if (!mat) return mat;
                                 
-                                // Create a flat basic material map that directly shows the image texture colors
                                 const basicMat = new THREE.MeshBasicMaterial({
                                     map: mat.map,
                                     color: new THREE.Color(0xffffff),
                                     side: THREE.DoubleSide
                                 });
                                 
-                                // Fix color profile output format mappings
                                 if (basicMat.map) {
                                     basicMat.map.encoding = THREE.sRGBEncoding;
                                     basicMat.map.needsUpdate = true;
@@ -64,7 +61,6 @@
                                 return basicMat;
                             });
                             
-                            // Apply the updated material tracking safely back to the node
                             node.material = Array.isArray(node.material) ? newMats : newMats[0];
                             node.material.needsUpdate = true;
                         }
@@ -117,16 +113,11 @@
     </a-scene>
 
     <script>
-        // Hide the loading overlay when everything compiles successfully
-        window.addEventListener('arjs-nft-loaded', () => {
-            document.querySelector('.arjs-loader').style.display = 'none';
-        });
-        
-        // Backup safety handler if tracking initialize takes time on older handsets
-        window.addEventListener('camera-init', () => {
+        // FIXED EVENT: Removes the loading screen as soon as the webcam or scene loads
+        document.querySelector('a-scene').addEventListener('renderstart', () => {
             setTimeout(() => {
-                document.querySelector('.arjs-loader').style.display = 'none';
-            }, 800);
+                document.getElementById('loading-screen').style.display = 'none';
+            }, 500);
         });
     </script>
 </body>
